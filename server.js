@@ -8,7 +8,6 @@ import { rateLimit } from "express-rate-limit";
 
 import fs from 'fs/promises';
 
-const swaggerDocument = JSON.parse(data);
 
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 5 minutes
