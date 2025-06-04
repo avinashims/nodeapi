@@ -1,0 +1,211 @@
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+model Customer {
+    id               Int           @id @default(autoincrement())
+    email            String        @unique
+    firstName        String?
+    lastName         String?
+    password         String
+    profilePicture   String?
+    verificationCode String?
+    isVerified       Boolean       @default(false)
+    isBlocked        Boolean       @default(false)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("customers")
+}
+model User {
+    id               Int           @id @default(autoincrement())
+    email            String        @unique
+    firstName        String?
+    lastName         String?
+    password         String
+    profilePicture   String?
+    verificationCode String?
+    isVerified       Boolean       @default(false)
+    isBlocked        Boolean       @default(false)
+    wishlist         Wishlist[]
+    cart             Cart[]
+    testimonials     Testimonial[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("users")
+}
+
+model Category {
+    id        Int      @id @default(autoincrement())
+    name      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    products Product[]
+
+    @@map("categories")
+}
+
+model Product {
+    id             Int        @id @default(autoincrement())
+    name           String
+    description    String?
+    price          String
+    images         Json
+    stock          Int
+    colors         String
+    sizes          String
+    shipping       String
+    isOnSale       Boolean    @default(false)
+    salePercentage Int?       @default(0)
+    createdAt      DateTime   @default(now())
+    updatedAt      DateTime   @updatedAt
+    categoryId     Int
+    category       Category   @relation(fields: [categoryId], references: [id])
+    wishlist       Wishlist[]
+    cart           Cart[]
+    topModel       TopModel[]
+
+    @@map("products")
+}
+
+model Wishlist {
+    id        Int      @id @default(autoincrement())
+    userId    Int
+    productId Int
+    user      User     @relation(fields: [userId], references: [id])
+    product   Product  @relation(fields: [productId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    Cart      Cart[]
+
+    @@unique([userId, productId])
+    @@map("wishlists")
+}
+
+model Cart {
+    id         Int       @id @default(autoincrement())
+    userId     Int
+    user       User      @relation(fields: [userId], references: [id])
+    productId  Int
+    product    Product   @relation(fields: [productId], references: [id])
+    colors     String
+    sizes      String
+    quantity   Int
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+    Wishlist   Wishlist? @relation(fields: [wishlistId], references: [id])
+    wishlistId Int?
+
+    @@map("carts")
+}
+
+model Faq {
+    id       Int    @id @default(autoincrement())
+    question String
+    answer   Json
+
+    @@map("faqs")
+}
+
+model Message {
+    id        Int      @id @default(autoincrement())
+    name      String
+    email     String
+    message   Json
+    createdAt DateTime @default(now())
+
+    @@map("messages")
+}
+
+model Testimonial {
+    id        Int      @id @default(autoincrement())
+    quote     String   @db.Text
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    userId Int
+    user   User @relation(fields: [userId], references: [id])
+
+    @@map("testimonials")
+}
+
+model TopModel {
+    id        Int     @id @default(autoincrement())
+    productId Int
+    product   Product @relation(fields: [productId], references: [id])
+    count     Int
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("top_models")
+}
+
+model AboutUs {
+    id        Int      @id @default(autoincrement())
+    title     String
+    content   Json
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("about_us")
+}
+
+model Contact {
+    id        Int      @id @default(autoincrement())
+    email     String
+    phone     Json
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("contacts")
+}
+
+model Careers {
+    id        Int      @id @default(autoincrement())
+    title     String
+    content   Json
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("careers")
+}
+
+model PrivacyPolicy {
+    id        Int      @id @default(autoincrement())
+    title     String
+    content   Json
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("privacy_policies")
+}
+
+model TermsAndConditions {
+    id        Int      @id @default(autoincrement())
+    title     String
+    content   Json
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("terms_and_conditions")
+}
+
+model Admin {
+    id        Int      @id @default(autoincrement())
+    firstName String
+    lastName  String
+    email     String   @unique
+    password  String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("admins")
+}
