@@ -35,7 +35,7 @@ app.use(express.static("public"))
 
 app.get("/",(req,res)=>{
 	console.log('avavavva');
-	res.send("Welcome prisma api");
+	res.send("Welcome prisma11111111 api");
 	
 })
 
