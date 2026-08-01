@@ -1,120 +1,108 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { authApi, ACCESS_TOKEN_KEY, USER_KEY, clearAuthStorage, persistSession } from "../api/client";
-import { subscribeAuthBridge } from "../lib/authBridge";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { authApi, ACCESS_TOKEN_KEY, USER_KEY, saveSession, clearSession } from "../api/client";
 
 const AuthContext = createContext(null);
 
-function readStoredUser() {
-  const stored = localStorage.getItem(USER_KEY);
-  if (!stored) return null;
+function loadUser() {
   try {
-    return JSON.parse(stored);
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(readStoredUser);
+  const [user, setUser] = useState(loadUser);
   const [accessToken, setAccessToken] = useState(() => localStorage.getItem(ACCESS_TOKEN_KEY));
-  const [initializing, setInitializing] = useState(true);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const clearLocalSession = useCallback(() => {
-    clearAuthStorage();
-    setUser(null);
-    setAccessToken(null);
-  }, []);
+  useEffect(() => {
+    function onUpdate(e) {
+      const data = e.detail;
+      if (data?.user) setUser(data.user);
+      if (data?.accessToken) setAccessToken(data.accessToken);
+    }
 
-  const applySession = useCallback((data) => {
-    if (data?.user) setUser(data.user);
-    if (data?.accessToken) setAccessToken(data.accessToken);
-    persistSession(data);
+    function onExpired() {
+      setUser(null);
+      setAccessToken(null);
+    }
+
+    window.addEventListener("auth:update", onUpdate);
+    window.addEventListener("auth:expired", onExpired);
+    return () => {
+      window.removeEventListener("auth:update", onUpdate);
+      window.removeEventListener("auth:expired", onExpired);
+    };
   }, []);
 
   useEffect(() => {
-    return subscribeAuthBridge({
-      onSessionUpdate: (data) => {
-        if (data?.user) setUser(data.user);
-        if (data?.accessToken) setAccessToken(data.accessToken);
-      },
-      onSessionExpired: () => {
-        clearLocalSession();
-      },
-    });
-  }, [clearLocalSession]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function bootstrap() {
+    async function init() {
       try {
         if (accessToken) {
           const res = await authApi.me();
-          if (!cancelled) setUser(res.data.user);
-          return;
+          setUser(res.data.user);
+        } else {
+          const res = await authApi.refresh();
+          saveSession(res.data);
+          setUser(res.data.user);
+          setAccessToken(res.data.accessToken);
         }
-        const res = await authApi.refresh();
-        if (!cancelled) applySession(res.data);
       } catch {
-        if (!cancelled) clearLocalSession();
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setUser(null);
+        setAccessToken(null);
       } finally {
-        if (!cancelled) setInitializing(false);
+        setLoading(false);
       }
     }
 
-    bootstrap();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once on mount
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    setAuthLoading(true);
-    try {
-      const res = await authApi.login({ email, password });
-      applySession(res.data);
-      return res;
-    } finally {
-      setAuthLoading(false);
-    }
-  }, [applySession]);
+  async function login(email, password) {
+    const res = await authApi.login({ email, password });
+    saveSession(res.data);
+    setUser(res.data.user);
+    setAccessToken(res.data.accessToken);
+    return res;
+  }
 
-  const register = useCallback(async (name, email, password) => {
-    setAuthLoading(true);
-    try {
-      const res = await authApi.register({ name, email, password });
-      applySession(res.data);
-      return res;
-    } finally {
-      setAuthLoading(false);
-    }
-  }, [applySession]);
+  async function register(name, email, password) {
+    const res = await authApi.register({ name, email, password });
+    saveSession(res.data);
+    setUser(res.data.user);
+    setAccessToken(res.data.accessToken);
+    return res;
+  }
 
-  const logout = useCallback(async () => {
+  async function logout() {
     try {
       await authApi.logout();
     } catch {
-      /* refresh cookie may already be gone */
+      /* ignore */
     }
-    clearLocalSession();
-  }, [clearLocalSession]);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    setUser(null);
+    setAccessToken(null);
+  }
 
   const value = useMemo(
     () => ({
       user,
-      token: accessToken,
       accessToken,
-      loading: initializing || authLoading,
-      initializing,
-      isAuthenticated: Boolean(accessToken && user),
+      loading,
+      isAuthenticated: Boolean(user && accessToken),
       isAdmin: user?.role === "ADMIN",
       login,
       register,
       logout,
     }),
-    [user, accessToken, initializing, authLoading, login, register, logout]
+    [user, accessToken, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

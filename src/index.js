@@ -77,9 +77,7 @@ async function startServer() {
   await connectRedis();
 
   if (!isRedisReady()) {
-    console.warn(
-      "WARNING: REDIS_URL is missing or Redis failed — auth refresh tokens require Redis (login/register/refresh will fail with 503)"
-    );
+    console.warn("REDIS_URL not set — product cache disabled; auth uses MySQL for refresh tokens");
   }
 
   app.listen(PORT, () => {

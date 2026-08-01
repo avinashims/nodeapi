@@ -1,16 +1,14 @@
-const { verifyAccessToken } = require("../lib/jwt");
 const prisma = require("../lib/prisma");
-const { AppError } = require("../lib/errors");
+const { verifyAccessToken } = require("../lib/auth");
 
 async function authenticate(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new AppError("Access token required", 401, "ACCESS_TOKEN_MISSING");
+    const header = req.headers.authorization;
+    if (!header?.startsWith("Bearer ")) {
+      return res.status(401).json({ success: false, message: "Access token required" });
     }
 
-    const token = authHeader.split(" ")[1];
+    const token = header.split(" ")[1];
     const decoded = verifyAccessToken(token);
 
     const user = await prisma.user.findUnique({
@@ -19,20 +17,20 @@ async function authenticate(req, res, next) {
     });
 
     if (!user) {
-      throw new AppError("User not found", 401, "USER_NOT_FOUND");
+      return res.status(401).json({ success: false, message: "User not found" });
     }
 
     req.user = user;
     next();
-  } catch (error) {
-    next(error);
+  } catch {
+    return res.status(401).json({ success: false, message: "Invalid or expired token" });
   }
 }
 
 function authorize(...roles) {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return next(new AppError("Access denied", 403, "FORBIDDEN"));
+      return res.status(403).json({ success: false, message: "Access denied" });
     }
     next();
   };

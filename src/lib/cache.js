@@ -7,11 +7,17 @@ function getTtl(override) {
   return typeof override === "number" && override > 0 ? override : DEFAULT_TTL;
 }
 
+function logCache(type, key) {
+  if (process.env.CACHE_DEBUG === "false") return;
+  console.log(type === "HIT" ? `[CACHE HIT] ${key}` : `[CACHE MISS → DB] ${key}`);
+}
+
 async function cacheGet(key) {
   if (!isRedisReady()) return null;
   try {
     const raw = await getRedisClient().get(key);
     if (!raw) return null;
+    logCache("HIT", key);
     return JSON.parse(raw);
   } catch (err) {
     console.error("cacheGet error:", err.message);
@@ -23,7 +29,11 @@ async function cacheSet(key, value, ttlSeconds) {
   if (!isRedisReady()) return false;
   try {
     const payload = JSON.stringify(value);
-    await getRedisClient().set(key, payload, { EX: getTtl(ttlSeconds) });
+    const ttl = getTtl(ttlSeconds);
+    await getRedisClient().set(key, payload, { EX: ttl });
+    if (process.env.CACHE_DEBUG !== "false") {
+      console.log(`[CACHE SET] ${key} (expires in ${ttl}s)`);
+    }
     return true;
   } catch (err) {
     console.error("cacheSet error:", err.message);
@@ -92,4 +102,5 @@ module.exports = {
   invalidateDashboardCache,
   invalidateAdminDashboardCache,
   invalidateOrderRelatedCache,
+  logCache,
 };

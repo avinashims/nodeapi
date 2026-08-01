@@ -1,5 +1,5 @@
 const prisma = require("../lib/prisma");
-const { cacheGet, cacheSet } = require("../lib/cache");
+const { cacheGet, cacheSet, logCache } = require("../lib/cache");
 const { cacheKeys } = require("../lib/cacheKeys");
 
 async function getDashboard(req, res) {
@@ -13,6 +13,7 @@ async function getDashboard(req, res) {
       return res.status(200).json(cached);
     }
 
+    logCache("MISS", cacheKey);
     const [user, orders, orderStats] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -75,6 +76,7 @@ async function getAdminDashboard(req, res) {
       return res.status(200).json(cached);
     }
 
+    logCache("MISS", cacheKey);
     const [totalUsers, totalProducts, totalOrders, revenue, recentOrders] =
       await Promise.all([
         prisma.user.count(),

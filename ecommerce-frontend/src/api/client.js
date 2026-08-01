@@ -1,5 +1,4 @@
 import axios from "axios";
-import { notifySessionExpired, notifySessionUpdate } from "../lib/authBridge";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -11,8 +10,28 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+function getToken() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+export function saveSession(data) {
+  if (data?.accessToken) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+  }
+  if (data?.user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+  }
+  window.dispatchEvent(new CustomEvent("auth:update", { detail: data }));
+}
+
+export function clearSession() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  window.dispatchEvent(new Event("auth:expired"));
+}
+
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -22,102 +41,55 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-let refreshPromise = null;
+let refreshing = null;
 
-export function persistSession(data) {
-  if (data?.accessToken) {
-    localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
-  }
-  if (data?.user) {
-    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-  }
-  notifySessionUpdate(data);
-}
-
-export function clearAuthStorage() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-  localStorage.removeItem("token");
-}
-
-function shouldSkipRefreshRetry(config) {
-  if (!config?.url) return true;
-  const url = config.url;
-  return (
-    url.includes("/api/auth/refresh") ||
-    url.includes("/api/auth/login") ||
-    url.includes("/api/auth/register") ||
-    url.includes("/api/auth/logout")
-  );
-}
-
-function handleAuthFailure() {
-  clearAuthStorage();
-  notifySessionExpired();
-}
-
-async function refreshAccessToken() {
-  if (!refreshPromise) {
-    refreshPromise = api
-      .post("/api/auth/refresh")
-      .then((res) => {
-        persistSession(res.data);
-        return res;
-      })
-      .catch((err) => {
-        handleAuthFailure();
-        throw err;
-      })
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
-  return refreshPromise;
-}
+const skipRefreshUrls = ["/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/api/auth/logout"];
 
 api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
-    const original = error.config;
+    const config = error.config;
     const status = error.response?.status;
-
-    if (!original || !status) {
-      const message = error.message || "Request failed";
-      return Promise.reject(new Error(message));
-    }
-
-    if (status === 401 && original.url?.includes("/api/auth/refresh")) {
-      handleAuthFailure();
-      const message = error.response?.data?.message || "Session expired";
-      return Promise.reject(new Error(message));
-    }
-
-    if (status === 401 && !original._retry && !shouldSkipRefreshRetry(original)) {
-      original._retry = true;
-      try {
-        const res = await refreshAccessToken();
-        original.headers.Authorization = `Bearer ${res.data.accessToken}`;
-        return api(original);
-      } catch (refreshError) {
-        const message =
-          refreshError.response?.data?.message ||
-          refreshError.message ||
-          "Session expired";
-        return Promise.reject(new Error(message));
-      }
-    }
-
     const message = error.response?.data?.message || error.message || "Request failed";
-    return Promise.reject(new Error(message));
+
+    if (!config || status !== 401) {
+      return Promise.reject(new Error(message));
+    }
+
+    if (config.url?.includes("/api/auth/refresh")) {
+      clearSession();
+      return Promise.reject(new Error(message));
+    }
+
+    const isAuthRoute = skipRefreshUrls.some((url) => config.url?.includes(url));
+    if (isAuthRoute || config._retry) {
+      return Promise.reject(new Error(message));
+    }
+
+    config._retry = true;
+
+    try {
+      if (!refreshing) {
+        refreshing = api.post("/api/auth/refresh").finally(() => {
+          refreshing = null;
+        });
+      }
+      const res = await refreshing;
+      saveSession(res.data);
+      config.headers.Authorization = `Bearer ${res.data.accessToken}`;
+      return api(config);
+    } catch {
+      clearSession();
+      return Promise.reject(new Error("Session expired"));
+    }
   }
 );
 
 export const authApi = {
-  register: (body) => api.post("/api/auth/register", body),
   login: (body) => api.post("/api/auth/login", body),
+  register: (body) => api.post("/api/auth/register", body),
   refresh: () => api.post("/api/auth/refresh"),
   logout: () => api.post("/api/auth/logout"),
-  logoutAll: () => api.post("/api/auth/logout-all"),
   me: () => api.get("/api/auth/me"),
 };
 

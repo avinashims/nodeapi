@@ -1,5 +1,5 @@
 const prisma = require("../lib/prisma");
-const { cacheGet, cacheSet, invalidateProductCache } = require("../lib/cache");
+const { cacheGet, cacheSet, invalidateProductCache, logCache } = require("../lib/cache");
 const { cacheKeys } = require("../lib/cacheKeys");
 const { applyUploadedImage, deleteLocalUpload } = require("../middleware/upload");
 
@@ -95,11 +95,15 @@ async function getProducts(req, res) {
     const cacheKey = cacheKeys.productsList(page, limit, search, categoryId);
 
     const cached = await cacheGet(cacheKey);
+
     if (cached) {
+      console.log("[CACHE HIT] products from Redis:", cached.data?.products);
       res.set("X-Cache", "HIT");
       return res.status(200).json(cached);
     }
 
+    logCache("MISS", cacheKey);
+    console.log("[CACHE MISS] loading products from MySQL...");
     const skip = (page - 1) * limit;
 
     const where = {};
@@ -134,7 +138,8 @@ async function getProducts(req, res) {
       },
     };
 
-    await cacheSet(cacheKey, response, 120);
+    await cacheSet(cacheKey, response, 300);
+    console.log("[CACHE SET] products saved to Redis:", products);
     res.set("X-Cache", "MISS");
     return res.status(200).json(response);
   } catch (error) {
@@ -153,10 +158,13 @@ async function getProductById(req, res) {
     const cacheKey = cacheKeys.productById(productId);
     const cached = await cacheGet(cacheKey);
     if (cached) {
+      console.log("[CACHE HIT] product from Redis:", cached.data);
       res.set("X-Cache", "HIT");
       return res.status(200).json(cached);
     }
 
+    logCache("MISS", cacheKey);
+    console.log("[CACHE MISS] loading product from MySQL, id:", productId);
     const product = await prisma.product.findUnique({
       where: { id: productId },
       include: productInclude,
@@ -167,6 +175,7 @@ async function getProductById(req, res) {
 
     const response = { success: true, data: product };
     await cacheSet(cacheKey, response, 120);
+    console.log("[CACHE SET] product saved to Redis:", product);
     res.set("X-Cache", "MISS");
     return res.status(200).json(response);
   } catch (error) {

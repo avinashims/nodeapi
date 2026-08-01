@@ -1,21 +1,10 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-/** Login/register only — send signed-in users to home or prior destination. */
 export default function GuestRoute() {
-  const { isAuthenticated, initializing } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
-  if (initializing) {
-    return (
-      <div className="auth-loading" role="status" aria-live="polite">
-        Loading…
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-
+  if (loading) return <p className="auth-loading">Loading…</p>;
+  if (isAuthenticated) return <Navigate to="/" replace />;
   return <Outlet />;
 }
