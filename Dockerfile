@@ -5,7 +5,8 @@ WORKDIR /app
 RUN apk add --no-cache openssl wget
 
 COPY package*.json ./
-RUN npm ci
+# Skip postinstall (prisma generate) until schema is copied
+RUN npm ci --ignore-scripts
 
 COPY prisma ./prisma
 RUN npx prisma generate
