@@ -15,6 +15,17 @@ jobs:
       contents: read
       packages: write
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            context: .
+            file: Dockerfile
+          - name: web
+            context: ./ecommerce-frontend
+            file: Dockerfile
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,26 +45,15 @@ jobs:
         id: meta
         run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push API image
+      - name: Build and push ${{ matrix.name }} image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: Dockerfile
-          push: true
-          no-cache: false
-          tags: |
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:latest
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:${{ steps.meta.outputs.tag }}
-
-      - name: Build and push Web image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./ecommerce-frontend
-          file: Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:latest
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/${{ matrix.name }}:latest
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/${{ matrix.name }}:${{ steps.meta.outputs.tag }}
 
   deploy:
     needs: build-and-push
