@@ -5,7 +5,6 @@ WORKDIR /app
 RUN apk add --no-cache openssl wget
 
 COPY package*.json ./
-# Skip postinstall (prisma generate) until schema is copied
 RUN npm ci --ignore-scripts
 
 COPY prisma ./prisma
@@ -13,7 +12,7 @@ RUN npx prisma generate
 
 COPY src ./src
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && mkdir -p uploads/products
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh && mkdir -p uploads/products
 
 EXPOSE 3000
 

@@ -4,61 +4,77 @@ on:
   push:
     branches: [ecomm, main]
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy to DigitalOcean server
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
-  build-and-push:
+  build-api:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: api
-            context: .
-            file: Dockerfile
-          - name: web
-            context: ./ecommerce-frontend
-            file: Dockerfile
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Lowercase repo name for GHCR
+      - name: Lowercase repo name
         id: repo
         run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract image tag
-        id: meta
-        run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push ${{ matrix.name }} image
+      - name: Build and push API
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.file }}
+          context: .
+          file: Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/${{ matrix.name }}:latest
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/${{ matrix.name }}:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:latest
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:${{ github.sha }}
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase repo name
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Web
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ecommerce-frontend
+          file: ./ecommerce-frontend/Dockerfile
+          push: true
+          build-args: |
+            VITE_API_URL=
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:latest
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:${{ github.sha }}
 
   deploy:
-    needs: build-and-push
+    needs: [build-api, build-web]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/ecomm' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy == true
 
     steps:
       - name: Deploy to DigitalOcean
@@ -72,11 +88,8 @@ jobs:
           envs: GHCR_TOKEN
           script: |
             set -e
-            cd ${{ secrets.DO_APP_PATH }}
-
+            cd /var/www/ecommerce
             echo "$GHCR_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker compose -f docker-compose.prod.yml ps
-            docker image prune -f
