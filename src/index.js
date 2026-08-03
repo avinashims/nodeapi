@@ -48,7 +48,7 @@ app.get("/api/health", (req, res) => {
 });
 
 
-app.get("/total", (req, res) => {
+app.get("/api/total", (req, res) => {
 
     const price = 200;
     const tax = 18;
