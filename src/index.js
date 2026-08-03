@@ -42,7 +42,7 @@ app.get("/health", (req, res) => {
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
-    message: "Ecommerce API is running",
+    message: "Ecommerce12222222 API is running",
     redis: isRedisReady() ? "connected" : "disabled",
   });
 });
@@ -55,9 +55,9 @@ app.get("/api/total", (req, res) => {
 
     debugger;
 
-    const total = price + tax;
+    const total12 = price + tax;
 
-    res.json({ total });
+    res.json({ total12 });
 });
 app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
