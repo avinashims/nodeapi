@@ -34,7 +34,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.get("/health", (req, res) => {
   res.json({
     success: true,
-    message: "Ecommerce API is running",
+    message: "Ecommerce1222222 API is running",
     redis: isRedisReady() ? "connected" : "disabled",
   });
 });
@@ -55,9 +55,9 @@ app.get("/api/total", (req, res) => {
 
     debugger;
 
-    const total12 = price + tax;
+    const total1234 = price + tax;
 
-    res.json({ total12 });
+    res.json({ total1234 });
 });
 app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);

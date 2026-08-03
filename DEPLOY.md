@@ -259,7 +259,7 @@ On push to `ecomm` or `main`:
 |-----|--------|
 | **build-api** | Build & push `ghcr.io/avinashims/nodeapi/api:latest` |
 | **build-web** | Build & push `ghcr.io/avinashims/nodeapi/web:latest` |
-| **deploy** | Manual only (workflow_dispatch with deploy=true) |
+| **deploy** | Automatic on push to `ecomm`/`main` (SSH to server, pull GHCR images) |
 
 Check: GitHub → **Actions** → both build jobs must be **green**.
 

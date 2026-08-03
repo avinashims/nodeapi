@@ -166,39 +166,11 @@ git push origin ecomm
 1. GitHub → **Actions**
 2. Wait for **build-api** and **build-web** to turn **green** ✅
 
-### Step 3 — Deploy to server
+### Step 3 — Deploy (automatic)
 
-**Option A — Manual from GitHub (recommended)**
+After **build-api** and **build-web** succeed, the **deploy** job runs automatically and updates the live server. No SSH needed.
 
-1. **Actions** → **Build and Deploy** → **Run workflow**
-2. Branch: `ecomm`
-3. Check ✅ **Deploy to DigitalOcean server**
-4. **Run workflow**
-
-**Option B — SSH to server manually**
-
-```bash
-ssh root@165.22.209.200
-cd /var/www/ecommerce
-git pull origin ecomm
-docker compose -f docker-compose.prod.yml pull
-docker compose -f docker-compose.prod.yml up -d
-curl http://localhost/api/health
-```
-
-**Pull only API (faster if only API changed):**
-
-```bash
-docker compose -f docker-compose.prod.yml pull api
-docker compose -f docker-compose.prod.yml up -d api
-```
-
-**Pull only Web:**
-
-```bash
-docker compose -f docker-compose.prod.yml pull web
-docker compose -f docker-compose.prod.yml up -d web
-```
+**Optional:** **Actions → Build and Deploy → Run workflow** still works for manual redeploy.
 
 ---
 
