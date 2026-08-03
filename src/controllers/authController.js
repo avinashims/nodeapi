@@ -33,7 +33,7 @@ async function register(req, res) {
     select: userFields,
   });
 
-  return sendAuthResponse(res, user, "Registration successful", 201);
+  return sendAuthResponse(res, user, "your Registration has been successful", 201);
 }
 
 async function login(req, res) {
