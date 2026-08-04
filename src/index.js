@@ -31,18 +31,12 @@ app.use(cookieParser());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-app.get("/health", (req, res) => {
-  res.json({
-    success: true,
-    message: "Ecommerce1222222 API is running",
-    redis: isRedisReady() ? "connected" : "disabled",
-  });
-});
+
 
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
-    message: "Ecommerce12222222 API is running",
+    message: "Ecommerce12222222 API12333333 is running",
     redis: isRedisReady() ? "connected" : "disabled",
   });
 });
