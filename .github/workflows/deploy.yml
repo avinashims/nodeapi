@@ -2,19 +2,14 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [ecomm]
+    branches: [ecomm, main]
   workflow_dispatch:
     inputs:
       promote_to_production:
-        description: Promote QA-tested build to Production (requires approval)
+        description: Deploy QA-tested :qa images to Production (manual)
         required: false
         default: false
         type: boolean
-      image_tag:
-        description: Image tag to deploy to production (default qa = last QA build)
-        required: false
-        default: qa
-        type: string
 
 permissions:
   contents: read
@@ -33,6 +28,15 @@ jobs:
         id: repo
         run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
+      - name: Set image tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "value=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=qa" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -46,7 +50,7 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:qa
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:${{ steps.tag.outputs.value }}
             ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:${{ github.sha }}
 
   build-web:
@@ -57,6 +61,15 @@ jobs:
       - name: Lowercase repo name
         id: repo
         run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set image tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "value=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=qa" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: docker/login-action@v3
         with:
@@ -73,13 +86,13 @@ jobs:
           build-args: |
             VITE_API_URL=
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:qa
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:${{ steps.tag.outputs.value }}
             ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:${{ github.sha }}
 
   deploy-qa:
     needs: [build-api, build-web]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.ref == 'refs/heads/ecomm' && github.event_name == 'push'
     environment: qa
 
     steps:
@@ -101,30 +114,39 @@ jobs:
             docker compose -f docker-compose.qa.yml pull
             docker compose -f docker-compose.qa.yml up -d --remove-orphans
             docker compose -f docker-compose.qa.yml ps
-            echo "QA deployed commit: ${{ github.sha }}"
-            echo "QA URL: http://YOUR_QA_HOST:8080"
+            echo "QA deployed from branch ecomm commit ${{ github.sha }}"
 
   deploy-production:
     needs: [build-api, build-web]
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && inputs.promote_to_production == true
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.promote_to_production == true)
     environment: production
 
     steps:
-      - uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+
+      - name: Lowercase repo name
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Promote QA images to latest (manual dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Promote images to latest
+      - name: Retag qa to latest
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          REPO="${GITHUB_REPOSITORY,,}"
-          TAG="${{ inputs.image_tag }}"
-          docker pull ${{ env.REGISTRY }}/${REPO}/api:${TAG}
-          docker pull ${{ env.REGISTRY }}/${REPO}/web:${TAG}
-          docker tag ${{ env.REGISTRY }}/${REPO}/api:${TAG} ${{ env.REGISTRY }}/${REPO}/api:latest
-          docker tag ${{ env.REGISTRY }}/${REPO}/web:${TAG} ${{ env.REGISTRY }}/${REPO}/web:latest
+          REPO="${{ steps.repo.outputs.name }}"
+          docker pull ${{ env.REGISTRY }}/${REPO}/api:qa
+          docker pull ${{ env.REGISTRY }}/${REPO}/web:qa
+          docker tag ${{ env.REGISTRY }}/${REPO}/api:qa ${{ env.REGISTRY }}/${REPO}/api:latest
+          docker tag ${{ env.REGISTRY }}/${REPO}/web:qa ${{ env.REGISTRY }}/${REPO}/web:latest
           docker push ${{ env.REGISTRY }}/${REPO}/api:latest
           docker push ${{ env.REGISTRY }}/${REPO}/web:latest
 
@@ -140,10 +162,10 @@ jobs:
           script: |
             set -e
             cd /var/www/ecommerce
-            git pull origin ecomm
+            git pull origin main
             echo "$GHCR_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             export IMAGE_TAG=latest
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker compose -f docker-compose.prod.yml ps
-            echo "Production deployed tag: latest (from ${{ inputs.image_tag }})"
+            echo "Production deployed from branch main commit ${{ github.sha }}"
