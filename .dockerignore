@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.vscode
+README.md
+postman
+ecommerce-frontend/node_modules
+ecommerce-frontend/dist
+ecommerce-frontend/.env
+uploads/products/*
+!uploads/products/.gitkeep

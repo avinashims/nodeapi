@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+*.log
+uploads/products/*
+!uploads/products/.gitkeep
+
+# Never commit secrets or local notes
+login.txt
+doplerlogin.txt
+
+
+
+

@@ -1,0 +1,54 @@
+# QA environment — pull pre-built images tagged :qa from GHCR
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ecommerce_db_qa}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data_qa:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data_qa:/data
+
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY:-avinashims/nodeapi}/api:${IMAGE_TAG:-qa}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-ecommerce_db_qa}
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: production
+    volumes:
+      - uploads_data_qa:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY:-avinashims/nodeapi}/web:${IMAGE_TAG:-qa}
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  mysql_data_qa:
+  redis_data_qa:
+  uploads_data_qa:
