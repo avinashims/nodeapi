@@ -47,6 +47,14 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+app.get("/api/avi", (req, res) => {
+  res.json({
+    success: true,
+    message: "Welcome to avinash",
+    redis: isRedisReady() ? "connected" : "disabled",
+  });
+});
+
 
 app.get("/api/total", (req, res) => {
 
