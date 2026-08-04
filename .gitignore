@@ -9,3 +9,8 @@ uploads/products/*
 
 # Never commit secrets or local notes
 login.txt
+doplerlogin.txt
+
+
+
+

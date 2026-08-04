@@ -2,6 +2,9 @@
 
 End-to-end guide: develop on your PC → push to GitHub → deploy to the live DigitalOcean server using Docker and CI/CD.
 
+> **Full CI/CD guide (recommended):** [CI_CD_COMPLETE_GUIDE.md](./CI_CD_COMPLETE_GUIDE.md)  
+> **First-time server install:** [DEPLOY.md](./DEPLOY.md)
+
 **Repo:** `https://github.com/avinashims/nodeapi`  
 **Branch:** `ecomm`  
 **Live server:** `/var/www/ecommerce` on your droplet (e.g. `165.22.209.200`)

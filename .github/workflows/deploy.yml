@@ -2,14 +2,19 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [ecomm, main]
+    branches: [ecomm]
   workflow_dispatch:
     inputs:
-      deploy:
-        description: Deploy to DigitalOcean server
+      promote_to_production:
+        description: Promote QA-tested build to Production (requires approval)
         required: false
         default: false
         type: boolean
+      image_tag:
+        description: Image tag to deploy to production (default qa = last QA build)
+        required: false
+        default: qa
+        type: string
 
 permissions:
   contents: read
@@ -41,7 +46,7 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:latest
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:qa
             ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:${{ github.sha }}
 
   build-web:
@@ -68,21 +73,67 @@ jobs:
           build-args: |
             VITE_API_URL=
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:latest
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:qa
             ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/web:${{ github.sha }}
 
-  deploy:
+  deploy-qa:
     needs: [build-api, build-web]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    if: github.event_name == 'push'
+    environment: qa
 
     steps:
-      - name: Deploy to DigitalOcean
+      - name: Deploy to QA server
         uses: appleboy/ssh-action@v1.2.0
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         with:
-          host: ${{ secrets.DO_HOST }}
+          host: ${{ secrets.QA_HOST || secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          envs: GHCR_TOKEN
+          script: |
+            set -e
+            cd /var/www/ecommerce-qa
+            git pull origin ecomm
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            export IMAGE_TAG=qa
+            docker compose -f docker-compose.qa.yml pull
+            docker compose -f docker-compose.qa.yml up -d --remove-orphans
+            docker compose -f docker-compose.qa.yml ps
+            echo "QA deployed commit: ${{ github.sha }}"
+            echo "QA URL: http://YOUR_QA_HOST:8080"
+
+  deploy-production:
+    needs: [build-api, build-web]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.promote_to_production == true
+    environment: production
+
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Promote images to latest
+        run: |
+          REPO="${GITHUB_REPOSITORY,,}"
+          TAG="${{ inputs.image_tag }}"
+          docker pull ${{ env.REGISTRY }}/${REPO}/api:${TAG}
+          docker pull ${{ env.REGISTRY }}/${REPO}/web:${TAG}
+          docker tag ${{ env.REGISTRY }}/${REPO}/api:${TAG} ${{ env.REGISTRY }}/${REPO}/api:latest
+          docker tag ${{ env.REGISTRY }}/${REPO}/web:${TAG} ${{ env.REGISTRY }}/${REPO}/web:latest
+          docker push ${{ env.REGISTRY }}/${REPO}/api:latest
+          docker push ${{ env.REGISTRY }}/${REPO}/web:latest
+
+      - name: Deploy to Production server
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        with:
+          host: ${{ secrets.PROD_HOST || secrets.DO_HOST }}
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
           envs: GHCR_TOKEN
@@ -91,6 +142,8 @@ jobs:
             cd /var/www/ecommerce
             git pull origin ecomm
             echo "$GHCR_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            export IMAGE_TAG=latest
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker compose -f docker-compose.prod.yml ps
+            echo "Production deployed tag: latest (from ${{ inputs.image_tag }})"

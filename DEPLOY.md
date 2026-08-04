@@ -2,7 +2,10 @@
 
 Complete steps to host the ecommerce app on a DigitalOcean droplet with Docker and GitHub Actions.
 
-> **Daily workflow (local PC → live server):** see **[LOCAL_TO_LIVE.md](./LOCAL_TO_LIVE.md)** for the full guide on pushing code, CI/CD, rebuilding containers, and debugging.
+> **QA + Production with approval:** [QA_PRODUCTION_SETUP.md](./QA_PRODUCTION_SETUP.md)  
+> **Complete server setup (zero to live):** [SERVER_SETUP_COMPLETE.md](./SERVER_SETUP_COMPLETE.md)  
+> **Daily CI/CD workflow:** [CI_CD_COMPLETE_GUIDE.md](./CI_CD_COMPLETE_GUIDE.md)  
+> **Manual build method:** [LOCAL_TO_LIVE.md](./LOCAL_TO_LIVE.md)
 
 ---
 
