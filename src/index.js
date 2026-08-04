@@ -55,9 +55,9 @@ app.get("/api/total", (req, res) => {
 
     debugger;
 
-    const total = price + tax;
+    const total678 = price + tax;
 
-    res.json({ total });
+    res.json({ total678 });
 });
 app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
