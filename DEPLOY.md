@@ -120,6 +120,14 @@ JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_DAYS=7
 
 CLIENT_URL=http://YOUR_DROPLET_IP
+PASSWORD_RESET_HOURS=1
+
+# Email for password reset (required in production)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your@gmail.com
+SMTP_PASS=your-gmail-app-password
+MAIL_FROM="Ecommerce <noreply@yourdomain.com>"
 
 REDIS_URL=redis://redis:6379
 REDIS_DEFAULT_TTL=300
@@ -132,6 +140,24 @@ GITHUB_REPOSITORY=avinashims/nodeapi
 ```
 
 > Never commit `.env` to Git.
+
+## 2.4.1 SMTP for password reset (production)
+
+Configure SMTP in `.env` so users receive password reset emails.
+
+| Provider | SMTP host | Port | Notes |
+|----------|-----------|------|-------|
+| Gmail | `smtp.gmail.com` | 587 | Use an [App Password](https://myaccount.google.com/apppasswords), not your login password |
+| SendGrid | `smtp.sendgrid.net` | 587 | User: `apikey`, Pass: your API key |
+| Brevo | `smtp-relay.brevo.com` | 587 | Use SMTP key from Brevo dashboard |
+
+Set `CLIENT_URL` to your public site URL (e.g. `http://165.22.209.200` or your domain) so reset links point to the correct frontend.
+
+Without SMTP on QA, reset links are logged in the API container:
+
+```bash
+docker compose -f docker-compose.qa.yml logs api | grep "password reset"
+```
 
 ## 2.5 Web Nginx config (Docker DNS fix)
 

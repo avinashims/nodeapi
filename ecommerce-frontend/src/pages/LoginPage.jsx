@@ -11,6 +11,7 @@ export default function LoginPage() {
   const location = useLocation();
   const from = location.state?.from || "/";
   const sessionExpired = location.state?.reason === "session_expired";
+  const resetSuccess = location.state?.message;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -30,6 +31,7 @@ export default function LoginPage() {
       {sessionExpired && (
         <p className="alert alert-error">Your session expired. Please sign in again.</p>
       )}
+      {resetSuccess && <p className="alert alert-success">{resetSuccess}</p>}
       <form onSubmit={handleSubmit} className="form">
         <label>
           Email
@@ -45,6 +47,9 @@ export default function LoginPage() {
             minLength={6}
           />
         </label>
+        <p>
+          <Link to="/forgot-password">Forgot password?</Link>
+        </p>
         {error && <p className="alert alert-error">{error}</p>}
         <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
           {loading ? "Signing in..." : "Login"}

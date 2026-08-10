@@ -13,6 +13,10 @@
     {
       "key": "token",
       "value": ""
+    },
+    {
+      "key": "resetToken",
+      "value": ""
     }
   ],
   "item": [
@@ -21,7 +25,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{baseUrl}}/health"
+        "url": "{{baseUrl}}/api/health"
       }
     },
     {
@@ -122,6 +126,59 @@
           ]
         },
         {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/forgot-password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.resetUrl) {",
+                  "  const url = new URL(json.data.resetUrl);",
+                  "  const token = url.searchParams.get('token');",
+                  "  if (token) {",
+                  "    pm.collectionVariables.set('resetToken', token);",
+                  "    console.log('Reset token saved from dev resetUrl');",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"password\": \"newpassword123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          }
+        },
+        {
           "name": "Refresh (HttpOnly cookie)",
           "request": {
             "method": "POST",
@@ -166,6 +223,8 @@
         }
       ]
     },
+    {
+      "name": "Products",
       "item": [
         {
           "name": "Get All Products",

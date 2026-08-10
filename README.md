@@ -77,10 +77,33 @@ Server runs at `http://localhost:3000`
 
 ### Authentication
 
-| Method | Endpoint             | Auth | Description         |
-|--------|----------------------|------|---------------------|
-| POST   | `/api/auth/register` | No   | Register new user   |
-| POST   | `/api/auth/login`    | No   | Login and get token |
+| Method | Endpoint                    | Auth | Description                    |
+|--------|-----------------------------|------|--------------------------------|
+| POST   | `/api/auth/register`        | No   | Register new user              |
+| POST   | `/api/auth/login`           | No   | Login and get token            |
+| POST   | `/api/auth/forgot-password` | No | Request password reset link    |
+| POST   | `/api/auth/reset-password`  | No   | Set new password with token    |
+| POST   | `/api/auth/refresh`         | No   | Refresh access token (cookie)  |
+| POST   | `/api/auth/logout`          | No   | Logout current session         |
+| GET    | `/api/auth/me`              | Yes  | Get current user               |
+
+**Forgot password:**
+```bash
+POST http://localhost:3000/api/auth/forgot-password
+Content-Type: application/json
+
+{ "email": "user@example.com" }
+```
+
+**Reset password:**
+```bash
+POST http://localhost:3000/api/auth/reset-password
+Content-Type: application/json
+
+{ "token": "reset-token-from-email", "password": "newpassword123" }
+```
+
+Without SMTP in development, the reset link is returned in `data.resetUrl` and logged in the server console.
 
 ### Products
 

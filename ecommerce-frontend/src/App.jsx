@@ -17,6 +17,8 @@ import CheckoutPage from "./pages/CheckoutPage";
 import DashboardPage from "./pages/DashboardPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import OrderDetailPage from "./pages/OrderDetailPage";
 import OrdersPage from "./pages/OrdersPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
@@ -35,6 +37,8 @@ export default function App() {
               <Route element={<GuestRoute />}>
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
+                <Route path="forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="reset-password" element={<ResetPasswordPage />} />
               </Route>
 
               <Route element={<ProtectedRoute />}>

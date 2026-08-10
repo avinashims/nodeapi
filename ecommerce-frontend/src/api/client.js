@@ -43,7 +43,14 @@ api.interceptors.request.use((config) => {
 
 let refreshing = null;
 
-const skipRefreshUrls = ["/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/api/auth/logout"];
+const skipRefreshUrls = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/refresh",
+  "/api/auth/logout",
+];
 
 api.interceptors.response.use(
   (response) => response.data,
@@ -88,6 +95,8 @@ api.interceptors.response.use(
 export const authApi = {
   login: (body) => api.post("/api/auth/login", body),
   register: (body) => api.post("/api/auth/register", body),
+  forgotPassword: (body) => api.post("/api/auth/forgot-password", body),
+  resetPassword: (body) => api.post("/api/auth/reset-password", body),
   refresh: () => api.post("/api/auth/refresh"),
   logout: () => api.post("/api/auth/logout"),
   me: () => api.get("/api/auth/me"),

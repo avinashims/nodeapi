@@ -12,6 +12,13 @@ const {
   sendAuthResponse,
   createRefreshToken,
 } = require("../lib/auth");
+const {
+  createPasswordResetToken,
+  getUserIdFromResetToken,
+  deletePasswordResetToken,
+  deleteAllPasswordResetTokens,
+} = require("../lib/passwordReset");
+const { isSmtpConfigured, sendPasswordResetEmail } = require("../lib/mail");
 
 async function register(req, res) {
   const { name, email, password } = req.body;
@@ -121,6 +128,68 @@ async function getMe(req, res) {
   return res.json({ success: true, data: { user: req.user } });
 }
 
+const FORGOT_PASSWORD_MESSAGE =
+  "If an account with that email exists, a password reset link has been sent.";
+
+async function forgotPassword(req, res) {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Email is required" });
+  }
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  let resetUrl;
+
+  if (user) {
+    const token = await createPasswordResetToken(user.id);
+    const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/$/, "");
+    resetUrl = `${clientUrl}/reset-password?token=${token}`;
+
+    try {
+      await sendPasswordResetEmail(user.email, resetUrl);
+    } catch (err) {
+      console.error("[auth] Failed to send password reset email:", err.message);
+      return res.status(500).json({ success: false, message: "Failed to send reset email. Try again later." });
+    }
+  }
+
+  const response = { success: true, message: FORGOT_PASSWORD_MESSAGE };
+
+  if (user && resetUrl && !isSmtpConfigured() && process.env.NODE_ENV !== "production") {
+    response.data = { resetUrl };
+  }
+
+  return res.json(response);
+}
+
+async function resetPassword(req, res) {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({ success: false, message: "Token and password are required" });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+  }
+
+  const userId = await getUserIdFromResetToken(token);
+  if (!userId) {
+    return res.status(400).json({ success: false, message: "Invalid or expired reset link" });
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: await hashPassword(password) },
+  });
+
+  await deletePasswordResetToken(token);
+  await deleteAllPasswordResetTokens(userId);
+  await deleteAllRefreshTokens(userId);
+
+  return res.json({ success: true, message: "Password updated successfully. You can now log in." });
+}
+
 module.exports = {
   register,
   login,
@@ -129,4 +198,6 @@ module.exports = {
   logout,
   logoutAll,
   getMe,
+  forgotPassword,
+  resetPassword,
 };
