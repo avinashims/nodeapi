@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   return (
     <div className="auth-card">
-      <h1>Login</h1>
+      <h1>Login123</h1>
       <p className="muted">Sign in to access your cart, orders, and dashboard.</p>
       {sessionExpired && (
         <p className="alert alert-error">Your session expired. Please sign in again.</p>
