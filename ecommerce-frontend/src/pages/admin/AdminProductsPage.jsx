@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../../components/ProductCard";
-import { productApi, categoryApi, resolveProductImageUrl } from "../../api/client";
+import { productApi, categoryApi, aiApi, resolveProductImageUrl } from "../../api/client";
 
 const emptyForm = {
   name: "",
@@ -23,6 +23,7 @@ export default function AdminProductsPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   async function loadProducts() {
     const res = await productApi.list({ limit: 50 });
@@ -111,6 +112,30 @@ export default function AdminProductsPage() {
     }
   }
 
+  async function handleGenerateDescription() {
+    if (!form.name.trim()) {
+      setError("Enter a product name first");
+      return;
+    }
+    setError("");
+    setMessage("");
+    setGenerating(true);
+    try {
+      const categoryName = categories.find((cat) => String(cat.id) === String(form.categoryId))?.name || "";
+      const res = await aiApi.generateDescription({
+        name: form.name.trim(),
+        category: categoryName,
+        price: form.price,
+      });
+      setForm((current) => ({ ...current, description: res.data.description }));
+      setMessage("AI description generated. Review it, then save the product.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   async function handleDelete(id) {
     if (!window.confirm("Delete this product?")) return;
     setMessage("");
@@ -142,7 +167,17 @@ export default function AdminProductsPage() {
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </label>
           <label>
-            Description
+            <span className="label-row">
+              Description
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleGenerateDescription}
+                disabled={generating || !form.name.trim()}
+              >
+                {generating ? "Generating..." : "Generate with AI"}
+              </button>
+            </span>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}

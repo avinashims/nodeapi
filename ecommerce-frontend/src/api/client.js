@@ -147,6 +147,11 @@ export const dashboardApi = {
   admin: () => api.get("/api/dashboard/admin"),
 };
 
+export const aiApi = {
+  chat: (body) => api.post("/api/ai/chat", body),
+  generateDescription: (body) => api.post("/api/ai/product-description", body),
+};
+
 export function formatPrice(value) {
   const num = typeof value === "string" ? parseFloat(value) : Number(value);
   if (Number.isNaN(num)) return "₹0.00";

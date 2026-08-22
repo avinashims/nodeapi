@@ -307,6 +307,53 @@
           }
         }
       ]
+    },
+    {
+      "name": "AI",
+      "item": [
+        {
+          "name": "Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Show me headphones under 2000\",\n  \"history\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/ai/chat"
+          }
+        },
+        {
+          "name": "Generate Product Description (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Wireless Headphones\",\n  \"category\": \"Electronics\",\n  \"price\": \"1999\"\n}"
+            },
+            "url": "{{baseUrl}}/api/ai/product-description"
+          }
+        }
+      ]
     }
   ]
 }

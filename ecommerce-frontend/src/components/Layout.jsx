@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import ChatWidget from "./ChatWidget";
 import Navbar from "./Navbar";
 import { SearchProvider } from "../context/SearchContext";
 
@@ -13,6 +14,7 @@ export default function Layout() {
         <footer className="footer">
           <div className="container">ShopVerse — React ecommerce demo</div>
         </footer>
+        <ChatWidget />
       </div>
     </SearchProvider>
   );

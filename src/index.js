@@ -1,6 +1,7 @@
 require("dotenv").config();
 
 const path = require("path");
+const { monitorEventLoopDelay } = require("perf_hooks");
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -15,6 +16,7 @@ const cartRoutes = require("./routes/cartRoutes");
 const checkoutRoutes = require("./routes/checkoutRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,20 +33,36 @@ app.use(cookieParser());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-app.get("/health", (req, res) => {
-  res.json({
+const eventLoop = monitorEventLoopDelay({ resolution: 20 });
+eventLoop.enable();
+
+function getEventLoopStats() {
+  const delayMs = eventLoop.mean / 1e6;
+  const maxMs = eventLoop.max / 1e6;
+  const stats = {
+    eventLoopDelayMs: Number(delayMs.toFixed(2)),
+    eventLoopMaxMs: Number(maxMs.toFixed(2)),
+    eventLoopBlocked: delayMs > 100,
+  };
+  eventLoop.reset();
+  return stats;
+}
+
+function sendHealth(res, message) {
+  return res.json({
     success: true,
-    message: "Ecommerce1222222 API is running",
+    message,
     redis: isRedisReady() ? "connected" : "disabled",
+    ...getEventLoopStats(),
   });
+}
+
+app.get("/health", (req, res) => {
+  sendHealth(res, "Ecommerce1222222 API is running");
 });
 
 app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    message: "Ecommerce12222222 API is running",
-    redis: isRedisReady() ? "connected" : "disabled",
-  });
+  sendHealth(res, "Ecommerce12222222 API is running");
 });
 
 app.get("/api/avi", (req, res) => {
@@ -75,6 +93,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.use(notFoundHandler);
 

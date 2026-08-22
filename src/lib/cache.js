@@ -53,25 +53,67 @@ async function cacheDel(key) {
 }
 
 async function cacheDelByPattern(pattern) {
-  if (!isRedisReady()) return false;
+  if (!isRedisReady()) return 0;
   try {
     const redis = getRedisClient();
-    let deleted = 0;
+    const keys = [];
     for await (const key of redis.scanIterator({ MATCH: pattern, COUNT: 100 })) {
-      await redis.del(key);
-      deleted += 1;
+      keys.push(key);
     }
-    return deleted;
+    if (!keys.length) return 0;
+    await redis.del(keys);
+    return keys.length;
   } catch (err) {
     console.error("cacheDelByPattern error:", err.message);
-    return false;
+    return 0;
   }
 }
 
+async function getProductCacheVersion() {
+  if (!isRedisReady()) return 1;
+  try {
+    const redis = getRedisClient();
+    const existing = await redis.get(cacheKeys.productsVersion());
+    if (existing) {
+      const parsed = parseInt(existing, 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    }
+    await redis.set(cacheKeys.productsVersion(), "1", { NX: true });
+    return 1;
+  } catch (err) {
+    console.error("getProductCacheVersion error:", err.message);
+    return 1;
+  }
+}
+
+async function bumpProductCacheVersion() {
+  if (!isRedisReady()) return 1;
+  try {
+    return await getRedisClient().incr(cacheKeys.productsVersion());
+  } catch (err) {
+    console.error("bumpProductCacheVersion error:", err.message);
+    return 1;
+  }
+}
+
+async function productsListCacheKey(page, limit, search, categoryId) {
+  const version = await getProductCacheVersion();
+  return cacheKeys.productsList(version, page, limit, search, categoryId);
+}
+
+async function productByIdCacheKey(productId) {
+  const version = await getProductCacheVersion();
+  return cacheKeys.productById(version, productId);
+}
+
 async function invalidateProductCache(productId) {
-  await cacheDelByPattern(cacheKeys.productsPattern());
-  if (productId) {
-    await cacheDel(cacheKeys.productById(productId));
+  const version = await bumpProductCacheVersion();
+  const deleted = await cacheDelByPattern(cacheKeys.productsPattern());
+  if (process.env.CACHE_DEBUG !== "false") {
+    console.log(
+      `[CACHE INVALIDATE] products version=${version} deleted=${deleted}` +
+        (productId ? ` productId=${productId}` : "")
+    );
   }
   await invalidateAdminDashboardCache();
 }
@@ -98,6 +140,8 @@ module.exports = {
   cacheSet,
   cacheDel,
   cacheDelByPattern,
+  productsListCacheKey,
+  productByIdCacheKey,
   invalidateProductCache,
   invalidateDashboardCache,
   invalidateAdminDashboardCache,
