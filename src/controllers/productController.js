@@ -1,6 +1,5 @@
 const prisma = require("../lib/prisma");
-const { cacheGet, cacheSet, invalidateProductCache, logCache } = require("../lib/cache");
-const { cacheKeys } = require("../lib/cacheKeys");
+const { cacheGet, cacheSet, invalidateProductCache, logCache, productsListCacheKey, productByIdCacheKey } = require("../lib/cache");
 const { applyUploadedImage, deleteLocalUpload } = require("../middleware/upload");
 
 function parseProductId(id) {
@@ -92,7 +91,7 @@ async function getProducts(req, res) {
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
     const search = req.query.search?.trim();
     const categoryId = req.query.categoryId ? parseInt(req.query.categoryId, 10) : null;
-    const cacheKey = cacheKeys.productsList(page, limit, search, categoryId);
+    const cacheKey = await productsListCacheKey(page, limit, search, categoryId);
 
     const cached = await cacheGet(cacheKey);
 
@@ -155,7 +154,7 @@ async function getProductById(req, res) {
       return res.status(400).json({ success: false, message: "Invalid product ID" });
     }
 
-    const cacheKey = cacheKeys.productById(productId);
+    const cacheKey = await productByIdCacheKey(productId);
     const cached = await cacheGet(cacheKey);
     if (cached) {
       console.log("[CACHE HIT] product from Redis:", cached.data);
@@ -197,7 +196,7 @@ async function addProduct(req, res) {
       data: validation.data,
       include: productInclude,
     });
-    await invalidateProductCache();
+    await invalidateProductCache(product.id);
 
     return res.status(201).json({
       success: true,
