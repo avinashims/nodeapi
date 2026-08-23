@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { productApi } from "../api/client";
 import ProductCard from "../components/ProductCard";
 import { useAuth } from "../context/AuthContext";
@@ -58,6 +58,21 @@ export default function HomePage() {
       <section className="hero">
         <h1>Discover products you will love</h1>
         <p>Browse the catalog, add items to your cart, and checkout securely.</p>
+        <div className="hero__actions">
+          <Link to="/assistant" className="btn btn-primary">
+            Ask AI assistant
+          </Link>
+        </div>
+      </section>
+
+      <section className="ai-banner">
+        <div>
+          <h2>Need help finding a product?</h2>
+          <p className="muted">Ask the shopping assistant about prices, stock, and categories.</p>
+        </div>
+        <Link to="/assistant" className="btn btn-primary">
+          Chat with AI
+        </Link>
       </section>
 
       {message && <p className="alert alert-success">{message}</p>}

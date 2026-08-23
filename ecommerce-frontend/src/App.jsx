@@ -15,6 +15,7 @@ import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import DashboardPage from "./pages/DashboardPage";
+import AssistantPage from "./pages/AssistantPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -33,6 +34,7 @@ export default function App() {
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<HomePage />} />
+              <Route path="assistant" element={<AssistantPage />} />
               <Route path="products/:id" element={<ProductDetailPage />} />
               <Route element={<GuestRoute />}>
                 <Route path="login" element={<LoginPage />} />

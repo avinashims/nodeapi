@@ -74,6 +74,11 @@ export default function ProductDetailPage() {
           <p className="product-detail__price">{formatPrice(product.price)}</p>
           <p className="muted">{product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}</p>
           {product.description && <p>{product.description}</p>}
+          <p>
+            <Link to="/assistant" className="btn btn-secondary">
+              Ask AI about products
+            </Link>
+          </p>
 
           {product.stock > 0 && (
             <div className="quantity-row">

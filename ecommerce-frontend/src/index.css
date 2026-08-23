@@ -178,6 +178,63 @@ a:hover {
   margin: 0 0 0.5rem;
 }
 
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.ai-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.ai-banner h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+}
+
+.ai-banner p {
+  margin: 0;
+}
+
+.assistant-page__chat {
+  padding: 0;
+  overflow: hidden;
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+.assistant-page__header {
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.assistant-page__header p {
+  margin: 0.2rem 0 0;
+}
+
+.assistant-page__chat .chat-widget__messages {
+  flex: 1;
+}
+
+.assistant-page__chat .alert {
+  margin: 0 0.75rem;
+}
+
+.chat-page__messages {
+  min-height: 320px;
+}
+
 .search-bar {
   display: flex;
   gap: 0.75rem;

@@ -43,6 +43,7 @@ export default function Navbar() {
           <NavLink to="/" end>
             Shop
           </NavLink>
+          <NavLink to="/assistant">Ask AI</NavLink>
           {isAuthenticated && (
             <>
               <NavLink to="/dashboard">Dashboard</NavLink>
