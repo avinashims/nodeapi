@@ -157,7 +157,7 @@ async function generateProductDescription(req, res, next) {
         {
           role: "system",
           content:
-            "You write concise ecommerce product descriptions for an Indian store. Use 2-4 sentences, focus on benefits, stay factual, and do not use markdown or quotation marks around the whole text.",
+            "You write concise ecommerce product descriptions for an Indian store. Use 2-3 short sentences (under 400 characters), focus on benefits, stay factual, and do not use markdown or quotation marks around the whole text.",
         },
         {
           role: "user",

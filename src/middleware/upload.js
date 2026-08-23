@@ -10,7 +10,12 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    cb(null, UPLOAD_DIR);
+    try {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+      cb(null, UPLOAD_DIR);
+    } catch (err) {
+      cb(err);
+    }
   },
   filename(req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();

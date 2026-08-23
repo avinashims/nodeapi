@@ -2,16 +2,25 @@ const OpenAI = require("openai");
 
 let client = null;
 
+function getOpenAIKey() {
+  const raw = process.env.OPENAI_API_KEY;
+  if (!raw || typeof raw !== "string") {
+    return "";
+  }
+  return raw.trim().replace(/^["']|["']$/g, "");
+}
+
 function isOpenAIConfigured() {
-  return Boolean(process.env.OPENAI_API_KEY);
+  return Boolean(getOpenAIKey());
 }
 
 function getOpenAIClient() {
-  if (!isOpenAIConfigured()) {
+  const apiKey = getOpenAIKey();
+  if (!apiKey) {
     return null;
   }
   if (!client) {
-    client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    client = new OpenAI({ apiKey });
   }
   return client;
 }

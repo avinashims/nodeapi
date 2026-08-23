@@ -55,7 +55,7 @@ model Category {
 model Product {
   id          Int         @id @default(autoincrement())
   name        String
-  description String?
+  description String?   @db.Text
   price       Decimal     @db.Decimal(10, 2)
   stock       Int         @default(0)
   imageUrl    String?

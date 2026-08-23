@@ -61,7 +61,7 @@ async function cacheDelByPattern(pattern) {
       keys.push(key);
     }
     if (!keys.length) return 0;
-    await redis.del(keys);
+    await redis.del(...keys);
     return keys.length;
   } catch (err) {
     console.error("cacheDelByPattern error:", err.message);

@@ -85,6 +85,28 @@ async function validateProductInput(body, isUpdate = false) {
   return { data };
 }
 
+function prismaWriteError(error) {
+  if (error.code === "P2000") {
+    return { status: 400, message: "One of the fields is too long. Shorten the description and try again." };
+  }
+  if (error.code === "P2021" || error.code === "P2022") {
+    return { status: 500, message: "Database tables are missing. Run prisma migrate deploy on the server." };
+  }
+  if (error.code === "P2003") {
+    return { status: 400, message: "Category is invalid. Add a category first, then save the product." };
+  }
+  if (error.code === "P2002") {
+    return { status: 409, message: "A product with this name already exists." };
+  }
+  if (error.code === "ENOENT" || error.code === "EACCES") {
+    return { status: 500, message: "Could not save the product image. Check uploads folder permissions." };
+  }
+  return {
+    status: 500,
+    message: error.message || "Internal server error",
+  };
+}
+
 async function getProducts(req, res) {
   try {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -196,7 +218,11 @@ async function addProduct(req, res) {
       data: validation.data,
       include: productInclude,
     });
-    await invalidateProductCache(product.id);
+    try {
+      await invalidateProductCache(product.id);
+    } catch (cacheError) {
+      console.error("Add product cache error:", cacheError);
+    }
 
     return res.status(201).json({
       success: true,
@@ -205,7 +231,8 @@ async function addProduct(req, res) {
     });
   } catch (error) {
     console.error("Add product error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    const mapped = prismaWriteError(error);
+    return res.status(mapped.status).json({ success: false, message: mapped.message });
   }
 }
 
@@ -242,7 +269,11 @@ async function editProduct(req, res) {
       include: productInclude,
     });
 
-    await invalidateProductCache(productId);
+    try {
+      await invalidateProductCache(productId);
+    } catch (cacheError) {
+      console.error("Edit product cache error:", cacheError);
+    }
 
     return res.status(200).json({
       success: true,
@@ -251,7 +282,8 @@ async function editProduct(req, res) {
     });
   } catch (error) {
     console.error("Edit product error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    const mapped = prismaWriteError(error);
+    return res.status(mapped.status).json({ success: false, message: mapped.message });
   }
 }
 
