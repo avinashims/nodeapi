@@ -31,7 +31,7 @@ export default function App() {
       <CartProvider>
         <BrowserRouter>
           <AuthSessionGuard />
-          <Routes111>
+          <Routes>
             <Route element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="assistant" element={<AssistantPage />} />
@@ -55,7 +55,7 @@ export default function App() {
             </Route>
 
             <Route element={<AdminRoute />}>
-              <Route element={<AdminLayout11111 />}>
+              <Route element={<AdminLayout />}>
                 <Route path="admin" element={<AdminDashboardPage />} />
                 <Route path="admin/products" element={<AdminProductsPage />} />
                 <Route path="admin/categories" element={<AdminCategoriesPage />} />
