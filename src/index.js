@@ -17,7 +17,7 @@ const checkoutRoutes = require("./routes/checkoutRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const aiRoutes = require("./routes/aiRoutes");
-//const importRoutes = require("./routes/importRoutes");
+const importRoutes = require("./routes/importRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
