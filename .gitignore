@@ -6,6 +6,8 @@ dist/
 *.log
 uploads/products/*
 !uploads/products/.gitkeep
+imports/csv/*
+!imports/csv/.gitkeep
 
 # Never commit secrets or local notes
 login.txt

@@ -33,6 +33,7 @@ services:
       REDIS_URL: redis://redis:6379
     volumes:
       - uploads_data:/app/uploads
+      - imports_data:/app/imports
     depends_on:
       mysql:
         condition: service_healthy
@@ -54,3 +55,4 @@ volumes:
   mysql_data:
   redis_data:
   uploads_data:
+  imports_data:

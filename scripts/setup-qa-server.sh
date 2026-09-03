@@ -55,8 +55,9 @@ fi
 # 5. Firewall
 if command -v ufw &> /dev/null; then
   ufw allow "$QA_PORT/tcp" 2>/dev/null || true
+  ufw allow 3307/tcp 2>/dev/null || true
   ufw allow OpenSSH 2>/dev/null || true
-  echo "Firewall: port $QA_PORT allowed"
+  echo "Firewall: ports $QA_PORT and 3307 allowed"
 fi
 
 # 6. GHCR login reminder

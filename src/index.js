@@ -17,6 +17,7 @@ const checkoutRoutes = require("./routes/checkoutRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const aiRoutes = require("./routes/aiRoutes");
+//const importRoutes = require("./routes/importRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -94,6 +95,7 @@ app.use("/api/checkout", checkoutRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/imports", importRoutes);
 
 app.use(notFoundHandler);
 
@@ -103,6 +105,9 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ success: false, message, code: "UPLOAD_ERROR" });
   }
   if (err.message?.includes("images are allowed")) {
+    return res.status(400).json({ success: false, message: err.message, code: "UPLOAD_ERROR" });
+  }
+  if (err.message?.includes("CSV files")) {
     return res.status(400).json({ success: false, message: err.message, code: "UPLOAD_ERROR" });
   }
   return errorHandler(err, req, res, next);

@@ -12,7 +12,7 @@ RUN npx prisma generate
 
 COPY src ./src
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh && mkdir -p uploads/products
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh && mkdir -p uploads/products imports/csv
 
 EXPOSE 3000
 
