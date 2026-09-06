@@ -1,4 +1,7 @@
-# QA environment — pull pre-built images tagged :qa from GHCR
+# QA environment — blue/green deploy with shared MySQL/Redis
+# Port 8080 = edge proxy (routes to active web-blue or web-green slot)
+# Internal health ports: blue 8091, green 8092 (localhost only; avoids clash with prod 8081/8082)
+
 services:
   mysql:
     image: mysql:8.0
@@ -24,8 +27,18 @@ services:
     volumes:
       - redis_data_qa:/data
 
-  api:
+  proxy:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./docker/proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/state/active.upstream.conf:/etc/nginx/conf.d/active.upstream.conf:ro
+
+  api-blue:
     image: ghcr.io/${GITHUB_REPOSITORY:-avinashims/nodeapi}/api:${IMAGE_TAG:-qa}
+    container_name: ecommerce-qa-api-blue
     restart: unless-stopped
     env_file:
       - .env
@@ -42,13 +55,47 @@ services:
       redis:
         condition: service_started
 
-  web:
+  web-blue:
     image: ghcr.io/${GITHUB_REPOSITORY:-avinashims/nodeapi}/web:${IMAGE_TAG:-qa}
+    container_name: ecommerce-qa-web-blue
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "127.0.0.1:8091:80"
+    volumes:
+      - ./ecommerce-frontend/docker/nginx.blue.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      api:
+      api-blue:
+        condition: service_healthy
+
+  api-green:
+    image: ghcr.io/${GITHUB_REPOSITORY:-avinashims/nodeapi}/api:${IMAGE_TAG:-qa}
+    container_name: ecommerce-qa-api-green
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-ecommerce_db_qa}
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: production
+    volumes:
+      - uploads_data_qa:/app/uploads
+      - imports_data_qa:/app/imports
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  web-green:
+    image: ghcr.io/${GITHUB_REPOSITORY:-avinashims/nodeapi}/web:${IMAGE_TAG:-qa}
+    container_name: ecommerce-qa-web-green
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8092:80"
+    volumes:
+      - ./ecommerce-frontend/docker/nginx.green.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api-green:
         condition: service_healthy
 
 volumes:

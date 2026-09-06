@@ -9,6 +9,10 @@ uploads/products/*
 imports/csv/*
 !imports/csv/.gitkeep
 
+# Blue/green runtime state (created on server during deploy)
+deploy/state/*
+!deploy/state/.gitkeep
+
 # Never commit secrets or local notes
 login.txt
 doplerlogin.txt

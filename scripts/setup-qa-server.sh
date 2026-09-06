@@ -73,9 +73,8 @@ echo ""
 read -p "Run first QA deploy now? (y/n): " DEPLOY_NOW
 if [ "$DEPLOY_NOW" = "y" ] || [ "$DEPLOY_NOW" = "Y" ]; then
   export IMAGE_TAG=qa
-  docker compose -f docker-compose.qa.yml pull || echo "Pull failed — push code to GitHub first to build :qa images"
-  docker compose -f docker-compose.qa.yml up -d --remove-orphans
-  docker compose -f docker-compose.qa.yml ps
+  chmod +x scripts/blue-green-deploy.sh
+  ./scripts/blue-green-deploy.sh qa deploy || echo "Deploy failed — push code to GitHub first to build :qa images"
   echo ""
   echo "Test: curl http://localhost:$QA_PORT/api/health"
 fi
