@@ -101,6 +101,10 @@ get_inactive() {
 
 ensure_state_files() {
   mkdir -p deploy/state
+  # Docker creates a directory if the mount file was missing on first proxy start
+  if [ -d "$UPSTREAM_FILE" ]; then
+    rm -rf "$UPSTREAM_FILE"
+  fi
   if [ ! -f "$ACTIVE_FILE" ]; then
     echo "blue" > "$ACTIVE_FILE"
   fi
