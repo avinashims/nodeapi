@@ -118,8 +118,8 @@ async function getProducts(req, res) {
     const cached = await cacheGet(cacheKey);
 
     if (cached) {
-      console.log("[CACHE HIT] products12 from Redis:", cached.data?.products);
-      res.set("X-Cache", "HIT11");
+      console.log("[CACHE HIT] products from Redis:", cached.data?.products);
+      res.set("X-Cache", "HIT");
       return res.status(200).json(cached);
     }
 
@@ -135,8 +135,8 @@ async function getProducts(req, res) {
       where.categoryId = categoryId;
     }
 
-    const [products12, total] = await Promise.all([
-      prisma.product33.findMany({
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
         where,
         orderBy: { createdAt: "desc" },
         skip,
